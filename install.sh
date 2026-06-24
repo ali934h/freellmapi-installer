@@ -18,8 +18,8 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 step() { echo -e "\n${BOLD}${BLUE}==>${NC} ${BOLD}$*${NC}"; }
-info() { echo -e "${CYAN}  ->${NC} $*"; }
-warn() { echo -e "${YELLOW}  !!${NC} $*"; }
+info() { echo -e "${CYAN}  ->${NC} $*" >&2; }
+warn() { echo -e "${YELLOW}  !!${NC} $*" >&2; }
 ok()   { echo -e "${GREEN}  ok${NC} $*"; }
 err()  { echo -e "${RED}  xx${NC} $*" >&2; }
 
@@ -82,26 +82,26 @@ prompt_port() {
   suggested=$(find_free_port)
 
   if [[ "${suggested}" != "${DEFAULT_PORT}" ]]; then
-    warn "Port ${DEFAULT_PORT} is already in use. Suggested next free port: ${suggested}"
+    echo -e "${YELLOW}  !!${NC} Port ${DEFAULT_PORT} is already in use. Suggested next free port: ${suggested}" >&2
   else
-    info "Suggested port: ${suggested} (free)"
+    echo -e "${CYAN}  ->${NC} Suggested port: ${suggested} (free)" >&2
   fi
 
   local value=""
   while true; do
-    read -r -p "$(echo -e "Port to listen on [${suggested}]: ")" value
+    read -r -p "Port to listen on [${suggested}]: " value <&2 || true
     value="${value:-${suggested}}"
 
     if [[ ! "${value}" =~ ^[0-9]+$ ]] || (( value < 1024 || value > 65535 )); then
-      err "Port must be a number between 1024 and 65535."
+      echo -e "${RED}  xx${NC} Port must be a number between 1024 and 65535." >&2
       continue
     fi
     if is_blocked_port "${value}"; then
-      err "Port ${value} is reserved. Choose another."
+      echo -e "${RED}  xx${NC} Port ${value} is reserved. Choose another." >&2
       continue
     fi
     if is_port_in_use "${value}"; then
-      err "Port ${value} is already in use. Choose another."
+      echo -e "${RED}  xx${NC} Port ${value} is already in use. Choose another." >&2
       continue
     fi
     echo "${value}"
